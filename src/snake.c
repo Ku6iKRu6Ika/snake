@@ -1,16 +1,29 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <conio.h>
 #include <time.h>
 
 #include <pthread.h>
 
 #ifdef _WIN32
+#include <conio.h>
 #define CLEAR_COMMAND "cls"
 #endif
 
 #ifdef linux
+#include <termios.h>
+int getch()
+{
+    int ch;
+    struct termios oldt, newt;
+    tcgetattr( STDIN_FILENO, &oldt );
+    newt = oldt;
+    newt.c_lflag &= ~( ICANON | ECHO );
+    tcsetattr( STDIN_FILENO, TCSANOW, &newt );
+    ch = getchar();
+    tcsetattr( STDIN_FILENO, TCSANOW, &oldt );
+    return ch;
+}
 #define CLEAR_COMMAND "clear"
 #endif
 
