@@ -1,2 +1,2 @@
 all:
-	gcc src/main.c -o snake -lpthread -s
+	gcc src/snake.c -o snake -lpthread -s
