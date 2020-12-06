@@ -7,11 +7,19 @@
 
 #ifdef _WIN32
 #include <conio.h>
+#define UP_ARROW 'H'
+#define DOWN_ARROW 'P'
+#define LEFT_ARROW 'K'
+#define RIGHT_ARROW 'M'
 #define CLEAR_COMMAND "cls"
 #endif
 
 #ifdef linux
 #include <termios.h>
+#define UP_ARROW 'A'
+#define DOWN_ARROW 'B'
+#define LEFT_ARROW 'D'
+#define RIGHT_ARROW 'C'
 int getch()
 {
     int ch;
@@ -93,13 +101,13 @@ void * game(void *args) {
 
 		printf("Score: %d\n", score);
 
-		if((key == 'w' || key == 'H') && snake_change_to != 3)
+		if((key == 'w' || key == UP_ARROW) && snake_change_to != 3)
             snake_change_to = 1;
-        else if((key == 'd' || key == 'M') && snake_change_to != 4)
+        else if((key == 'd' || key == RIGHT_ARROW) && snake_change_to != 4)
             snake_change_to = 2;
-        else if((key == 's' || key == 'P') && snake_change_to != 1)
+        else if((key == 's' || key == DOWN_ARROW) && snake_change_to != 1)
             snake_change_to = 3;
-        else if((key == 'a' || key == 'K') && snake_change_to != 2)
+        else if((key == 'a' || key == LEFT_ARROW) && snake_change_to != 2)
             snake_change_to = 4;
 
 		if(snake_change_to == 1)
