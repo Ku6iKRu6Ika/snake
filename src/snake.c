@@ -5,114 +5,107 @@
 
 #include <pthread.h>
 
+#define UP 'w'
+#define DOWN 's'
+#define LEFT 'a'
+#define RIGHT 'd'
+
 #ifdef _WIN32
-#include <conio.h>
-#define UP_ARROW 'H'
-#define DOWN_ARROW 'P'
-#define LEFT_ARROW 'K'
-#define RIGHT_ARROW 'M'
-#define CLEAR_COMMAND "cls"
+    #include <conio.h>
+    #define UP_ARROW 'H'
+    #define DOWN_ARROW 'P'
+    #define LEFT_ARROW 'K'
+    #define RIGHT_ARROW 'M'
+    #define CLEAR_COMMAND "cls"
 #endif
 
 #ifdef linux
-#include <termios.h>
-#define UP_ARROW 'A'
-#define DOWN_ARROW 'B'
-#define LEFT_ARROW 'D'
-#define RIGHT_ARROW 'C'
-int getch()
-{
-    int ch;
-    struct termios oldt, newt;
-    tcgetattr( STDIN_FILENO, &oldt );
-    newt = oldt;
-    newt.c_lflag &= ~( ICANON | ECHO );
-    tcsetattr( STDIN_FILENO, TCSANOW, &newt );
-    ch = getchar();
-    tcsetattr( STDIN_FILENO, TCSANOW, &oldt );
-    return ch;
-}
-#define CLEAR_COMMAND "clear"
+    #include <termios.h>
+    #define UP_ARROW 'A'
+    #define DOWN_ARROW 'B'
+    #define LEFT_ARROW 'D'
+    #define RIGHT_ARROW 'C'
+    #define CLEAR_COMMAND "clear"
+
+    int getch()
+    {
+        int ch;
+        struct termios oldt, newt;
+        tcgetattr( STDIN_FILENO, &oldt );
+        newt = oldt;
+        newt.c_lflag &= ~( ICANON | ECHO );
+        tcsetattr( STDIN_FILENO, TCSANOW, &newt );
+        ch = getchar();
+        tcsetattr( STDIN_FILENO, TCSANOW, &oldt );
+        return ch;
+    }
 #endif
 
-int score = 0;
+#define MAP_H 20
+#define MAP_W 80
 
-int body_snake[100][2] = {{10, 5}, {9, 5}, {8, 5}};
-int snake_change_to = 2;
-int snake_length = 3;
+int score;
+
+int body_snake[100][2];;
+int snake_change_to;
+int snake_length;
 int xf;
 int yf;
 
-char map[20][81];
+char map[MAP_H][MAP_W + 1];
 char key;
 
-void draw_map()
+void init_snake();
+void draw_map();
+void display_map();
+void insert_coord(int x, int y);
+void pop_coord();
+void generate_food();
+void * game(void *args);
+
+int main()
 {
-    sprintf(map[0], "################################################################################");
-    for(int i = 1; i < 19; i++)
-        sprintf(map[i], "#                                                                              #");
-    sprintf(map[19], "################################################################################");
+    pthread_t thread;
+    int status;
 
-	for(int i = 0; i < snake_length; i++)
-		map[body_snake[i][1]][body_snake[i][0]] = '#';
+    system(CLEAR_COMMAND);
 
-    map[yf][xf] = '*';
+    status = pthread_create(&thread, NULL, game, NULL);
+    if(status != 0)
+        return 1;
+
+    while(key != 'q')
+        key = getch();
+
+	return 0;
 }
 
-void display_map()
+void * game(void *args)
 {
-	for(int i = 0; i < 20; i++)
-		printf("%s\n", map[i]);
-}
-
-void insert_coord(int x, int y)
-{
-	for(int i = snake_length; i > 0; i--)
-	{
-		body_snake[i][0] = body_snake[i - 1][0];
-		body_snake[i][1] = body_snake[i - 1][1];
-	}
-
-	body_snake[0][0] = x;
-	body_snake[0][1] = y;
-	snake_length++;
-}
-
-void pop_coord()
-{
-    snake_length--;
-}
-
-void generate_food()
-{
-    xf = rand() % 78 + 1;
-    yf = rand() % 18 + 1;
-}
-
-void * game(void *args) {
     srand(time(NULL));
+    init_snake();
     generate_food();
 
     while(1)
-	{
-		printf("\033[0;0H");
-		draw_map();
-		display_map();
+    {
+        printf("\033[0;0H");
+        draw_map();
+        display_map();
 
-		printf("Score: %d\n", score);
+        printf("Score: %i\n", score);
 
-		if((key == 'w' || key == UP_ARROW) && snake_change_to != 3)
+        if((key == UP || key == UP_ARROW) && snake_change_to != 3)
             snake_change_to = 1;
-        else if((key == 'd' || key == RIGHT_ARROW) && snake_change_to != 4)
+        else if((key == RIGHT || key == RIGHT_ARROW) && snake_change_to != 4)
             snake_change_to = 2;
-        else if((key == 's' || key == DOWN_ARROW) && snake_change_to != 1)
+        else if((key == DOWN || key == DOWN_ARROW) && snake_change_to != 1)
             snake_change_to = 3;
-        else if((key == 'a' || key == LEFT_ARROW) && snake_change_to != 2)
+        else if((key == LEFT || key == LEFT_ARROW) && snake_change_to != 2)
             snake_change_to = 4;
 
-		if(snake_change_to == 1)
-			insert_coord(body_snake[0][0], body_snake[0][1] - 1);
-		else if(snake_change_to == 2)
+        if(snake_change_to == 1)
+            insert_coord(body_snake[0][0], body_snake[0][1] - 1);
+        else if(snake_change_to == 2)
             insert_coord(body_snake[0][0] + 1, body_snake[0][1]);
         else if(snake_change_to == 3)
             insert_coord(body_snake[0][0], body_snake[0][1] + 1);
@@ -130,32 +123,79 @@ void * game(void *args) {
         if(map[body_snake[0][1]][body_snake[0][0]] == '#')
         {
             printf("Game Over\n");
-            exit(0);
+            sleep(2);
+            system(CLEAR_COMMAND);
+
+            init_snake();
+            generate_food();
         }
 
-		usleep(40000);
-	}
-
+        usleep(40000);
+    }
 
     return 0;
 }
 
-int main()
+void init_snake()
 {
-    pthread_t thread;
-    int status;
+    body_snake[0][0] = 10; body_snake[0][1] = 5;
+    body_snake[1][0] = 9;  body_snake[1][1] = 5;
+    body_snake[2][0] = 8;  body_snake[2][1] = 5;
 
-    system(CLEAR_COMMAND);
+    score = 0;
+    snake_change_to = 2;
+    snake_length = 3;
+    key = RIGHT;
+}
 
-    status = pthread_create(&thread, NULL, game, NULL);
-    if (status != 0)
-        exit(-11);
+void draw_map()
+{
+    memset(map[0], '#', MAP_W);
+    memset(map[MAP_H - 1], '#', MAP_W);
 
-    do
+    map[0][MAP_W] = 0;
+    map[MAP_H - 1][MAP_W] = 0;
+
+    for(int i = 1; i < MAP_H - 1; i++)
     {
-        key = getch();
+        memset(map[i], 32, MAP_W);
+        map[i][0] = '#';
+        map[i][MAP_W - 1] = '#';
+        map[i][MAP_W] = 0;
     }
-    while(key != 'q');
 
-	return 0;
+    for(int i = 0; i < snake_length; i++)
+        map[body_snake[i][1]][body_snake[i][0]] = '#';
+
+    map[yf][xf] = '*';
+}
+
+void display_map()
+{
+    for(int i = 0; i < MAP_H; i++)
+        printf("%s\n", map[i]);
+}
+
+void insert_coord(int x, int y)
+{
+    for(int i = snake_length; i > 0; i--)
+    {
+        body_snake[i][0] = body_snake[i - 1][0];
+        body_snake[i][1] = body_snake[i - 1][1];
+    }
+
+    body_snake[0][0] = x;
+    body_snake[0][1] = y;
+    snake_length++;
+}
+
+void pop_coord()
+{
+    snake_length--;
+}
+
+void generate_food()
+{
+    xf = rand() % (MAP_W - 2) + 1;
+    yf = rand() % (MAP_H - 2) + 1;
 }
